@@ -302,7 +302,7 @@ main
 			BL		NextLine
 			LDR		R0,=KeyPress
 			BL		PutStringSB
-			BL		NextLine
+						BL		NextLine
 			;need to wait for TxQueue to empty
 			LDR		R2,=TxRecord
 			LDRB	R1,[R2,#NUM_ENQD]
@@ -317,12 +317,13 @@ EmptyQueueLoop	CPSIE	I
 			;check for Key Pressed
 			LDR		R0,=RxRecord
 			;num enqueueed -> R1
-NoKey		LDR		R1,[R0,#NUM_ENQD]
+NoKey		LDRB	R1,[R0,#NUM_ENQD]
 			CMP		R1,#0
 			;no key pressed if nothing equeued want to keep checking 
 			BEQ		NoKey
-			;elsewise
-			B		KeyPressed
+			;elsewise a key was pressed and game can start
+			LDR		R0,=KeyPress
+			BL		PutStringSB
 			
 			
 ;>>>>>   end main program code <<<<<
