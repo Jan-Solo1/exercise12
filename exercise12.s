@@ -356,11 +356,16 @@ NoKey		LDRB	R1,[R0,#NUM_ENQD]
 			STRB	R3,[R2,#0]
 			
 			;elsewise a key was pressed and game can start
-			BL		NextLine
+LargeLoop	BL		NextLine
 			LDR		R0,=NewRound
 			BL		PutStringSB
 			BL		NextLine
 			BL		Input_Pointer
+			;need to wait for TxQueue to empty
+			LDR		R2,=TxRecord
+			LDRB	R1,[R2,#NUM_ENQD]
+			MOVS	R0,#0
+			
 EmptyQueueLoop1	CPSIE	I
 				LDRB	R1,[R2,#NUM_ENQD]
 				CMP		R1,#0
@@ -416,7 +421,9 @@ LoopRound	LDR		R4,=Count
 			BL		Clear_StopWatch
 			;times stops
 			BL		GetChar
+			BL		PutChar
 			;now char is in R0
+			B		LargeLoop
 			;compare that with the LED configuration
 LoopFinished
 			LDR		R0,=OutTime
