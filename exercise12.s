@@ -274,6 +274,7 @@ main
             BL      Startup
 ;---------------------------------------------------------------
 ;>>>>> begin main program code <<<<<
+			;>>>>> begin main program code <<<<<
 			BL		Init_UART0_ISR
 			;initalizing the stop by putting the RunStopWatch to Zero
 			LDR		R0,=RunStopWatch
@@ -322,8 +323,27 @@ NoKey		LDRB	R1,[R0,#NUM_ENQD]
 			;no key pressed if nothing equeued want to keep checking 
 			CPSIE	I
 			BEQ		NoKey
+			;dequeue the character from Rxqueue
+			MOVS	R1,R0
+			BL		Dequeue
 			;elsewise a key was pressed and game can start
-
+			BL		NextLine
+			LDR		R0,=NewRound
+			BL		PutStringSB
+			BL		NextLine
+			
+			;want to generate a random number 
+			
+			;then display LED and start timer
+			
+			LDR		R0,=RxRecord
+			;Loop through comparing the time and checking for correct imput
+			;num enqueueed -> R1
+			LDRB	R1,[R0,#NUM_ENQD]
+			CMP		R1,#0
+			;no key pressed if nothing equeued want to keep checking 
+			CPSIE	I
+			BEQ		NoKey
 			
 			
 ;>>>>>   end main program code <<<<<
