@@ -1059,9 +1059,19 @@ EndRandom				STR		R4,[R0,#0]
 Score_Round				PROC	{R0-R14},{}
 ;calculates the score for the round 
 ;uses the variable score and adds onto that 
-;inputs: R0 = Max_Round_Time, R1 = Time_Passed, R2 = 
+;inputs: R0 = Max_Round_Time, R1 = Time_Passed, R2 = Game_round
 						;going to check in the main code for correct LED chosen
 						;Wrong LED == zero points for the round
+						;Score loaded into R3
+						LDR		R3,=Score
+						LDR		R4,[R3,#0]
+						;score_round == Max_round_time - Time_passed
+						SUBS	R0,R0,R1
+						;Score_round == score_round 
+						MULS	R0,R2,R0
+						ADDS	R4,R4,R0
+						;Score += R4
+						STR		R4,[R3,#0]
 						BX		LR
 						ENDP
 ;-----------------------------------------------------------------------------------------------							
