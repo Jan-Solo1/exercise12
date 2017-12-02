@@ -1038,25 +1038,53 @@ EndRandom				STR		R4,[R0,#0]
 							
 							
 							
-Start_LED   			PROC {R0-R14},{}
-						PUSH {R0-R1}
-						
-						;Enable port E
-						LDR  R0,=SIM_SCGC5
-						LDR  R1,=SIM_SCGC5_PORTE_MASK
-						LDR  R2,[R0,#0]       ;current SIM_SCGC5 value
-						ORRS R2,R2,R1         ;only PORTE bit set
-						STR  R2,[R0,#0]       ;update SIM_SCGC5
-						
-						;Enable port D
-						LDR  R0,=SIM_SCGC5
-						LDR  R1,=SIM_SCGC5_PORTD_MASK
-						LDR  R2,[R0,#0]       ;current SIM_SCGC5 value
-						ORRS R2,R2,R1         ;only PORTD bit set
-						STR  R2,[R0,#0]       ;update SIM_SCGC5
-						POP {R0-R1}
-						BX		LR
-						ENDP
+Start_LED   PROC {R0-R14},{}
+            PUSH {R0-R1}
+            
+            ;Enable port E
+            LDR  R0,=SIM_SCGC5
+            LDR  R1,=SIM_SCGC5_PORTE_MASK
+            LDR  R2,[R0,#0]       ;current SIM_SCGC5 value
+            ORRS R2,R2,R1         ;only PORTE bit set
+            STR  R2,[R0,#0]       ;update SIM_SCGC5
+            
+            ;Enable port D
+            LDR  R0,=SIM_SCGC5
+            LDR  R1,=SIM_SCGC5_PORTD_MASK
+            LDR  R2,[R0,#0]       ;current SIM_SCGC5 value
+            ORRS R2,R2,R1         ;only PORTD bit set
+            STR  R2,[R0,#0]       ;update SIM_SCGC5
+            
+            ;Select PORT E Pin 29 for GPIO to red LED
+            LDR R0,=PORTE_BASE
+            LDR R1,=SET_PTE29_GPIO
+            STR R1,[R0,#PORTE_PCR29_OFFSET]
+            
+            ;Select PORT D Pin 5 for GPIO to green LED
+            LDR R0,=PORTD_BASE
+            LDR R1,=SET_PTD5_GPIO
+            STR R1,[R0,#PORTD_PCR5_OFFSET]
+            
+            LDR R0,=FGPIOD_BASE
+            LDR R1,=LED_PORTD_MASK
+            STR R1,[R0,#GPIO_PDDR_OFFSET]
+            
+            LDR R0,=FGPIOE_BASE
+            LDR R1,=LED_PORTE_MASK
+            STR R1,[R0,#GPIO_PDDR_OFFSET]
+            
+            ;Turn on red LED
+            LDR R0,=FGPIOE_BASE
+            LDR R1,=LED_RED_MASK
+            STR R1,[R0,#GPIO_PCOR_OFFSET]
+            
+            ;Turn on green LED
+            LDR R0,=FGPIOD_BASE
+            LDR R1,=LED_GREEN_MASK
+            STR R1,[R0,#GPIO_PCOR_OFFSET]
+	    POP {R0-R1}
+	    BX		LR
+	    ENDP
 ;>>>>>   end subroutine code <<<<<
             ALIGN
 ;****************************************************************
