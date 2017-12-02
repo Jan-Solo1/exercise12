@@ -274,7 +274,6 @@ main
             BL      Startup
 ;---------------------------------------------------------------
 ;>>>>> begin main program code <<<<<
-			;>>>>> begin main program code <<<<<
 			BL		Init_UART0_ISR
 			;initalizing the stop by putting the RunStopWatch to Zero
 			LDR		R0,=RunStopWatch
@@ -314,9 +313,9 @@ EmptyQueueLoop	CPSIE	I
 				CMP		R1,#0
 				BNE		EmptyQueueLoop
 			;the TxQueue is empty now
-			CPSID		I
+        CPSID		I
 			;check for Key Pressed
-			LDR		R0,=RxRecord
+        LDR		R0,=RxRecord
 			;num enqueueed -> R1
 NoKey		LDRB	R1,[R0,#NUM_ENQD]
 			CMP		R1,#0
@@ -328,13 +327,13 @@ NoKey		LDRB	R1,[R0,#NUM_ENQD]
 			BL		Dequeue
 			;elsewise a key was pressed and game can start
 			BL		NextLine
-			LDR		R0,=NewRound
+;			LDR		R0,=NewRound
 			BL		PutStringSB
 			BL		NextLine
 			
-			;want to generate a random number 
+			;Want to generate a random number 
 			
-			;then display LED and start timer
+			;Then display LED and start timer
 			
 			LDR		R0,=RxRecord
 			;Loop through comparing the time and checking for correct imput
@@ -342,9 +341,9 @@ NoKey		LDRB	R1,[R0,#NUM_ENQD]
 			LDRB	R1,[R0,#NUM_ENQD]
 			CMP		R1,#0
 			;no key pressed if nothing equeued want to keep checking 
-			CPSIE	I
-			BEQ		NoKey
 			
+      CPSIE	I
+			BEQ		NoKey
 			
 ;>>>>>   end main program code <<<<<
 ;Stay here
@@ -711,7 +710,7 @@ PutNumHex		PROC		{R0-R14},{}
 				PUSH{R0-R3,LR};push original values used at the very end
 				MOVS		R1,#0x0F			;Creates a mask
 				MOVS		R3,#8				;Initalize the counter
-Loop			CMP			R3,#0				;Compare to see if done
+Loop		CMP			R3,#0				;Compare to see if done
 				BLE			EndLoop
 				SUBS		R3,R3,#1			;Counter --
 				PUSH{R0};push original value
@@ -725,7 +724,7 @@ Loop			CMP			R3,#0				;Compare to see if done
 				POP{R2}
 				PUSH{R0}						;Push onto stack for later print
 				B LoopPrePare
-Number			ADDS		R0,R0,#0x030			;Add 0x030 to get to ascii numbers
+Number	ADDS		R0,R0,#0x030			;Add 0x030 to get to ascii numbers
 				;Clear the original value into another register
 				POP{R2}
 				PUSH{R0}
@@ -779,7 +778,7 @@ Loop1			BL		DIVU				;R1/10
 				MOVS	R0,#10				;move 10 back to R0 for division
 				B		Loop1
 				
-PRINT			SUBS	R2,R2,#1			;remove from counter to see how many numbers are on stack
+PRINT		SUBS	R2,R2,#1			;remove from counter to see how many numbers are on stack
 				POP{R0}						;take 1 num off stack
 				ADDS	R0,R0,#0x30			;change number to ascii
 				BL		PutChar				;print num
@@ -812,16 +811,16 @@ DIVULoop
 				BHI		Greater			; R0 > R1
 				SUBS	R1,R1,R0		;R1 - R0
 				ADDS	R2,R2,#1		;R2 + 1, Division has happened once
-				B		DIVULoop		;Back to loop
+				B		  DIVULoop		;Back to loop
 
 Greater	
 				MOVS	R0,R2			;MOVE into R0 for quotient
-				B		End1
+				B		  End1
 			
 OneDem
 				MOVS	R0,R1			;Becuse the denominator is 1 the numerator is as many times as it goes into it R0 <- R1
 				MOVS	R1,#0			;no remainder
-				B		End1
+				B		  End1
 				
 End1		
 				PUSH{R0}				;push R0 onto stack to prepare for clearing of C flag
@@ -980,6 +979,23 @@ Start_Watch				PROC	{R0-R14},{}
 						BX		LR
 						ENDP
 ;-----------------------------------------------------------------------------------------------
+Start_LED   PROC {R0-R14},{}
+            PUSH {R0-R1}
+            
+            ;Enable port E
+            LDR  R0,=SIM_SCGC5
+            LDR  R0,=SIM_SCGC5_PORTE_MASK
+            LDR  R1,[R0,#0]       ;current SIM_SCGC5 value
+            ORRS R1,R1,R0         ;only PORTE bit set
+            STR  R1,[R0,#0]       ;update SIM_SCGC5
+            
+            ;Enable port D
+            LDR  R0,=SIM_SCGC5
+            LDR  R0,=SIM_SCGC5_PORTD_MASK
+            LDR  R1,[R0,#0]       ;current SIM_SCGC5 value
+            ORRS R1,R1,R0         ;only PORTD bit set
+            STR  R1,[R0,#0]       ;update SIM_SCGC5
+
 ;>>>>>   end subroutine code <<<<<
             ALIGN
 ;****************************************************************
@@ -1052,27 +1068,33 @@ __Vectors_Size  EQU     __Vectors_End - __Vectors
             AREA    MyConst,DATA,READONLY
 ;>>>>> begin constants here <<<<<
 Instruction		DCB		"Welcome to the Game! The rules of the game follow.\0",0
-Rule1			DCB		"There are 10 rounds to the game decreasing in time each round.\0",0
-Rule2			DCB		"You are going to try to guess the LED light and will get points for guessign correctly.\0",0
-Rule3 			DCB		"There are three choices for LED N(no LED), B(Both LED), R(Red LED),and G(Green LED)\0",0
-KeyPress		DCB		"Press any key to get started\0",0
+Rule1			    DCB		"There are 10 rounds to the game decreasing in time each round.\0",0
+Rule2			    DCB		"You are going to try to guess the LED light and will get points for guessign correctly.\0",0
+Rule3 			  DCB		"There are three choices for LED N(no LED), B(Both LED), R(Red LED),and G(Green LED)\0",0
+KeyPress		  DCB		"Press any key to get started\0",0
 ;>>>>>   end constants here <<<<<
             ALIGN
 ;****************************************************************
 ;Variables
             AREA    MyData,DATA,READWRITE
 ;>>>>> begin variables here <<<<<
-RxQueue		SPACE		Q_BUF_SZ
-TxQueue		SPACE		Q_BUF_SZ
+RxQueue		    SPACE		Q_BUF_SZ
+TxQueue		    SPACE		Q_BUF_SZ
 
-RxRecord	SPACE		Q_REC_SZ
-	ALIGN
-TxRecord	SPACE		Q_REC_SZ
-	ALIGN
-Count			SPACE		4
+RxRecord	    SPACE		Q_REC_SZ
+    ALIGN
+TxRecord	    SPACE		Q_REC_SZ
+    ALIGN
+Count			    SPACE		4
 RunStopWatch	SPACE		1
-	ALIGN
-StringBuf		SPACE	MAX_STRING
+    ALIGN
+StringBuf		  SPACE	  MAX_STRING
+    ALIGN
+After         SPACE   2
+Before        SPACE   2
+
+
+  
 ;>>>>>   end variables here <<<<<
             ALIGN
             END
