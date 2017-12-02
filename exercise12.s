@@ -1004,11 +1004,11 @@ Random_Number			PROC	{R0-R14},{}
 						CMP		R1,#0
 						BNE		elseRand
 						;if the randomseet == 0
-						MOVS	R4,0xFFFF
-						STRB	R4,[R2,#0]
+						LDR		R4,=0xFFFF
+						STR		R4,[R2,#0]
 						B		NextIF
 elseRand				;if the randomseed != 0
-						STRB	R1,[R2,#0]
+						STR		R1,[R2,#0]
 NextIF					LDR		R4,[R2,#0]
 						;R4 <- Before
 						ADDS	R4,R4,0x0001
@@ -1022,34 +1022,39 @@ NextIF					LDR		R4,[R2,#0]
 						LSRS	R4,R4,#1	
 						;R4 >> 1
 						EORS	R4,R4,0x8408
-						STRB	R4,[R3,#0]
+						STR		R4,[R3,#0]
 						;After <- R4
 						B		EndRandom
 ElseAfter				LDR		R4,[R2,#0]
 						LSRS	R4,R4,#1
-EndRandom				STRB	R4,[R0,#0]
+EndRandom				STR		R4,[R0,#0]
 						;Store R4, after to RandomSeed
 						POP		{R0-R4}
 						BX		LR
 						ENDP
-Start_LED   PROC {R0-R14},{}
-            PUSH {R0-R1}
-            
-            ;Enable port E
-            LDR  R0,=SIM_SCGC5
-            LDR  R1,=SIM_SCGC5_PORTE_MASK
-            LDR  R2,[R0,#0]       ;current SIM_SCGC5 value
-            ORRS R2,R2,R1         ;only PORTE bit set
-            STR  R2,[R0,#0]       ;update SIM_SCGC5
-            
-            ;Enable port D
-            LDR  R0,=SIM_SCGC5
-            LDR  R1,=SIM_SCGC5_PORTD_MASK
-            LDR  R2,[R0,#0]       ;current SIM_SCGC5 value
-            ORRS R2,R2,R1         ;only PORTD bit set
-            STR  R2,[R0,#0]       ;update SIM_SCGC5
-			
-					
+							
+							
+							
+							
+Start_LED   			PROC {R0-R14},{}
+						PUSH {R0-R1}
+						
+						;Enable port E
+						LDR  R0,=SIM_SCGC5
+						LDR  R1,=SIM_SCGC5_PORTE_MASK
+						LDR  R2,[R0,#0]       ;current SIM_SCGC5 value
+						ORRS R2,R2,R1         ;only PORTE bit set
+						STR  R2,[R0,#0]       ;update SIM_SCGC5
+						
+						;Enable port D
+						LDR  R0,=SIM_SCGC5
+						LDR  R1,=SIM_SCGC5_PORTD_MASK
+						LDR  R2,[R0,#0]       ;current SIM_SCGC5 value
+						ORRS R2,R2,R1         ;only PORTD bit set
+						STR  R2,[R0,#0]       ;update SIM_SCGC5
+						POP {R0-R1}
+						BX		LR
+						ENDP
 ;>>>>>   end subroutine code <<<<<
             ALIGN
 ;****************************************************************
