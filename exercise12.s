@@ -1011,7 +1011,8 @@ elseRand				;if the randomseed != 0
 						STR		R1,[R2,#0]
 NextIF					LDR		R4,[R2,#0]
 						;R4 <- Before
-						ADDS	R4,R4,0x0001
+						MOVS	R5,#1
+						ANDS	R4,R4,R5
 						;compare R4 to #1
 						CMP		R4,#1
 						BNE		ElseAfter
@@ -1021,7 +1022,8 @@ NextIF					LDR		R4,[R2,#0]
 						LDR		R4,[R2,#0]
 						LSRS	R4,R4,#1	
 						;R4 >> 1
-						EORS	R4,R4,0x8408
+						LDR		R5,=0x8408
+						EORS	R4,R4,R5
 						STR		R4,[R3,#0]
 						;After <- R4
 						B		EndRandom
