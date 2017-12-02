@@ -1062,17 +1062,21 @@ KeyPress		DCB		"Press any key to get started\0",0
 ;Variables
             AREA    MyData,DATA,READWRITE
 ;>>>>> begin variables here <<<<<
-RxQueue		SPACE		Q_BUF_SZ
-TxQueue		SPACE		Q_BUF_SZ
+RxQueue		    SPACE		Q_BUF_SZ
+TxQueue		    SPACE		Q_BUF_SZ
 
-RxRecord	SPACE		Q_REC_SZ
-	ALIGN
-TxRecord	SPACE		Q_REC_SZ
-	ALIGN
-Count			SPACE		4
+RxRecord	    SPACE		Q_REC_SZ
+    ALIGN
+TxRecord	    SPACE		Q_REC_SZ
+    ALIGN
+Count			    SPACE		4
 RunStopWatch	SPACE		1
-	ALIGN
-StringBuf		SPACE	MAX_STRING
+    ALIGN
+StringBuf		  SPACE	  MAX_STRING
+    ALIGN
+After         SPACE   2
+Before        SPACE   2
+
 ;>>>>>   end variables here <<<<<
             ALIGN
             END
