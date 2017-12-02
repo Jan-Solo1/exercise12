@@ -242,6 +242,27 @@ PIT_MCR_EN_FRZ  EQU  PIT_MCR_FRZ_MASK
 ;1-->   0:TEN=timer enable
 PIT_TCTRL_CH_IE  EQU  (PIT_TCTRL_TEN_MASK :OR: PIT_TCTRL_TIE_MASK)
 ;---------------------------------------------------------------
+;Port D
+PTD5_MUX_GPIO EQU (1 << PORT_PCR_MUX_SHIFT)
+SET_PTD5_GPIO EQU (PORT_PCR_ISF_MASK :OR: \
+PTD5_MUX_GPIO)
+ 
+ ;Port E
+PTE29_MUX_GPIO EQU (1 << PORT_PCR_MUX_SHIFT)
+SET_PTE29_GPIO EQU (PORT_PCR_ISF_MASK :OR: \
+PTE29_MUX_GPIO)
+ 
+POS_RED EQU 29
+   
+POS_GREEN EQU 5
+   
+LED_RED_MASK EQU (1 << POS_RED)
+   
+LED_GREEN_MASK EQU (1 << POS_GREEN)
+   
+LED_PORTD_MASK EQU LED_GREEN_MASK
+   
+LED_PORTE_MASK EQU LED_RED_MASK
 ; Management record structure field displacements 
 IN_PTR    	EQU    	0 
 OUT_PTR   	EQU    	4 
@@ -1034,29 +1055,65 @@ EndRandom				STR		R4,[R0,#0]
 						POP		{R0-R4}
 						BX		LR
 						ENDP
-							
-							
-							
-							
-Start_LED   			PROC {R0-R14},{}
-						PUSH {R0-R1}
-						
-						;Enable port E
-						LDR  R0,=SIM_SCGC5
-						LDR  R1,=SIM_SCGC5_PORTE_MASK
-						LDR  R2,[R0,#0]       ;current SIM_SCGC5 value
-						ORRS R2,R2,R1         ;only PORTE bit set
-						STR  R2,[R0,#0]       ;update SIM_SCGC5
-						
-						;Enable port D
-						LDR  R0,=SIM_SCGC5
-						LDR  R1,=SIM_SCGC5_PORTD_MASK
-						LDR  R2,[R0,#0]       ;current SIM_SCGC5 value
-						ORRS R2,R2,R1         ;only PORTD bit set
-						STR  R2,[R0,#0]       ;update SIM_SCGC5
-						POP {R0-R1}
+;-----------------------------------------------------------------------------------------------						
+Score_Round				PROC	{R0-R14},{}
+;calculates the score for the round 
+;uses the variable score and adds onto that 
+;inputs: R0 = Max_Round_Time, R1 = Time_Passed, R2 = 
+						;going to check in the main code for correct LED chosen
+						;Wrong LED == zero points for the round
 						BX		LR
 						ENDP
+;-----------------------------------------------------------------------------------------------							
+							
+							
+Start_LED   PROC {R0-R14},{}
+			PUSH {R0-R1}
+
+			;Enable port E
+			LDR  R0,=SIM_SCGC5
+			LDR  R1,=SIM_SCGC5_PORTE_MASK
+			LDR  R2,[R0,#0]       ;current SIM_SCGC5 value
+			ORRS R2,R2,R1         ;only PORTE bit set
+			STR  R2,[R0,#0]       ;update SIM_SCGC5
+
+			;Enable port D
+			LDR  R0,=SIM_SCGC5
+			LDR  R1,=SIM_SCGC5_PORTD_MASK
+			LDR  R2,[R0,#0]       ;current SIM_SCGC5 value
+			ORRS R2,R2,R1         ;only PORTD bit set
+			STR  R2,[R0,#0]       ;update SIM_SCGC5
+
+			;Select PORT E Pin 29 for GPIO to red LED
+			LDR R0,=PORTE_BASE
+			LDR R1,=SET_PTE29_GPIO
+			STR R1,[R0,#PORTE_PCR29_OFFSET]
+
+			;Select PORT D Pin 5 for GPIO to green LED
+			LDR R0,=PORTD_BASE
+			LDR R1,=SET_PTD5_GPIO
+			STR R1,[R0,#PORTD_PCR5_OFFSET]
+
+			LDR R0,=FGPIOD_BASE
+			LDR R1,=LED_PORTD_MASK
+			STR R1,[R0,#GPIO_PDDR_OFFSET]
+
+			LDR R0,=FGPIOE_BASE
+			LDR R1,=LED_PORTE_MASK
+			STR R1,[R0,#GPIO_PDDR_OFFSET]
+
+			;Turn on red LED
+			LDR R0,=FGPIOE_BASE
+			LDR R1,=LED_RED_MASK
+			STR R1,[R0,#GPIO_PCOR_OFFSET]
+
+			;Turn on green LED
+			LDR R0,=FGPIOD_BASE
+			LDR R1,=LED_GREEN_MASK
+			STR R1,[R0,#GPIO_PCOR_OFFSET]
+			POP {R0-R1}
+			BX		LR
+			ENDP
 ;>>>>>   end subroutine code <<<<<
             ALIGN
 ;****************************************************************
@@ -1155,6 +1212,7 @@ StringBuf		SPACE	MAX_STRING
 RandomSeed		SPACE	2
 After         	SPACE   2
 Before        	SPACE   2
+Score			SPACE	2
 ;>>>>>   end variables here <<<<<
             ALIGN
             END
