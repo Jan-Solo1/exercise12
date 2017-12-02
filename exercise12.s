@@ -256,6 +256,7 @@ Q_REC_SZ  	EQU    	18        ;Management record size
 	
 CR			EQU		0x0D
 LF			EQU		0x0A
+
 	
 MAX_STRING	EQU		79
 ;****************************************************************
@@ -274,7 +275,6 @@ main
             BL      Startup
 ;---------------------------------------------------------------
 ;>>>>> begin main program code <<<<<
-			;>>>>> begin main program code <<<<<
 			BL		Init_UART0_ISR
 			;initalizing the stop by putting the RunStopWatch to Zero
 			LDR		R0,=RunStopWatch
@@ -326,6 +326,10 @@ NoKey		LDRB	R1,[R0,#NUM_ENQD]
 			;dequeue the character from Rxqueue
 			MOVS	R1,R0
 			BL		Dequeue
+			LDR		R2,=RandomSeed
+			MOVS	R3,#0
+			STRB	R3,[R2,#0]
+			
 			;elsewise a key was pressed and game can start
 			BL		NextLine
 			LDR		R0,=NewRound
@@ -980,6 +984,72 @@ Start_Watch				PROC	{R0-R14},{}
 						BX		LR
 						ENDP
 ;-----------------------------------------------------------------------------------------------
+Input_Pointer			PROC	{R0-R14},{}
+;produces a new line and then the character ">"
+						PUSH{R0,LR}
+						BL		NextLine
+						MOVS	R0,#">"
+						BL		PutChar
+						POP		{R0,PC}
+						ENDP
+;-----------------------------------------------------------------------------------------------
+Random_Number			PROC	{R0-R14},{}
+;creates a psodo random number from a seed
+						PUSH	{R0-R4}
+						LDR		R2,=Before
+						LDR		R3,=After
+						;Compare ranodm seed to zero
+						LDR		R0,=RandomSeed
+						LDR		R1,[R0,#0]
+						CMP		R1,#0
+						BNE		elseRand
+						;if the randomseet == 0
+						MOVS	R4,0xFFFF
+						STRB	R4,[R2,#0]
+						B		NextIF
+elseRand				;if the randomseed != 0
+						STRB	R1,[R2,#0]
+NextIF					LDR		R4,[R2,#0]
+						;R4 <- Before
+						ADDS	R4,R4,0x0001
+						;compare R4 to #1
+						CMP		R4,#1
+						BNE		ElseAfter
+						;if they are equal
+						;After <- ((Before >> 1) XOR 0x8408)
+						;Before value -> R4
+						LDR		R4,[R2,#0]
+						LSRS	R4,R4,#1	
+						;R4 >> 1
+						EORS	R4,R4,0x8408
+						STRB	R4,[R3,#0]
+						;After <- R4
+						B		EndRandom
+ElseAfter				LDR		R4,[R2,#0]
+						LSRS	R4,R4,#1
+EndRandom				STRB	R4,[R0,#0]
+						;Store R4, after to RandomSeed
+						POP		{R0-R4}
+						BX		LR
+						ENDP
+Start_LED   PROC {R0-R14},{}
+            PUSH {R0-R1}
+            
+            ;Enable port E
+            LDR  R0,=SIM_SCGC5
+            LDR  R1,=SIM_SCGC5_PORTE_MASK
+            LDR  R2,[R0,#0]       ;current SIM_SCGC5 value
+            ORRS R2,R2,R1         ;only PORTE bit set
+            STR  R2,[R0,#0]       ;update SIM_SCGC5
+            
+            ;Enable port D
+            LDR  R0,=SIM_SCGC5
+            LDR  R1,=SIM_SCGC5_PORTD_MASK
+            LDR  R2,[R0,#0]       ;current SIM_SCGC5 value
+            ORRS R2,R2,R1         ;only PORTD bit set
+            STR  R2,[R0,#0]       ;update SIM_SCGC5
+			
+					
 ;>>>>>   end subroutine code <<<<<
             ALIGN
 ;****************************************************************
@@ -1056,6 +1126,7 @@ Rule1			DCB		"There are 10 rounds to the game decreasing in time each round.\0",
 Rule2			DCB		"You are going to try to guess the LED light and will get points for guessign correctly.\0",0
 Rule3 			DCB		"There are three choices for LED N(no LED), B(Both LED), R(Red LED),and G(Green LED)\0",0
 KeyPress		DCB		"Press any key to get started\0",0
+NewRound		DCB		"New Round Enter the LED\0",0
 ;>>>>>   end constants here <<<<<
             ALIGN
 ;****************************************************************
@@ -1073,6 +1144,10 @@ Count			SPACE		4
 RunStopWatch	SPACE		1
 	ALIGN
 StringBuf		SPACE	MAX_STRING
+	   ALIGN
+RandomSeed		SPACE	2
+After         	SPACE   2
+Before        	SPACE   2
 ;>>>>>   end variables here <<<<<
             ALIGN
             END
