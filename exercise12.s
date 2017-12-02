@@ -278,7 +278,8 @@ Q_REC_SZ  	EQU    	18        ;Management record size
 CR			EQU		0x0D
 LF			EQU		0x0A
 
-	
+Round_Time	EQU		1000
+Num_Rounds	EQU		10
 MAX_STRING	EQU		79
 ;****************************************************************
 ;Program
@@ -297,6 +298,7 @@ main
 ;---------------------------------------------------------------
 ;>>>>> begin main program code <<<<<
 			BL		Init_UART0_ISR
+			BL		Start_LED
 			;initalizing the stop by putting the RunStopWatch to Zero
 			LDR		R0,=RunStopWatch
 			LDRB	R1,[R0,#0]
@@ -347,6 +349,8 @@ NoKey		LDRB	R1,[R0,#NUM_ENQD]
 			;dequeue the character from Rxqueue
 			MOVS	R1,R0
 			BL		Dequeue
+			
+			;initalize the randomseed to zero
 			LDR		R2,=RandomSeed
 			MOVS	R3,#0
 			STRB	R3,[R2,#0]
@@ -356,11 +360,48 @@ NoKey		LDRB	R1,[R0,#NUM_ENQD]
 			LDR		R0,=NewRound
 			BL		PutStringSB
 			BL		NextLine
-			
+			BL		Input_Pointer
+EmptyQueueLoop1	CPSIE	I
+				LDRB	R1,[R2,#NUM_ENQD]
+				CMP		R1,#0
+				BNE		EmptyQueueLoop1
+			;the TxQueue is empty now
+			CPSID		I
+			BL		Random_Number
 			;want to generate a random number 
-			
+			LDR		R2,=RandomSeed
+			LDR		R2,[R2,#0]
+			;Random seed in R2
+			;depending on random number change LED for the case
+			CMP		R2,#0
+			BEQ		NoLED
+			CMP		R2,#1
+			BEQ		BothLED
+			CMP		R2,#2
+			BEQ		RedLED
+			;else wise show green
+			BL		R_Off
+			BL		G_On
+			B		TimeStart
+NoLED		BL		R_Off
+			BL		G_Off
+			B		TimeStart
+BothLED		BL		R_On
+			BL		G_On
+			B		TimeStart
+RedLED		BL		R_On
+			BL		G_Off
+TimeStart	BL		Start_Watch		
 			;then display LED and start timer
-			
+			;create max_Round time and the round on 
+			MOVS	R2,#Num_Rounds
+			;R2 <- amount of round 
+			LDR		R3,=Round_Time
+			;Max_round time == R3
+LoopRound	LDR		R4,=Count
+			LDR		R4,[R4,#0]
+			CMP		R4,R3
+			BHS		LoopFinished
 			LDR		R0,=RxRecord
 			;Loop through comparing the time and checking for correct imput
 			;num enqueueed -> R1
@@ -368,9 +409,18 @@ NoKey		LDRB	R1,[R0,#NUM_ENQD]
 			CMP		R1,#0
 			;no key pressed if nothing equeued want to keep checking 
 			CPSIE	I
-			BEQ		NoKey
-			
-			
+			BEQ		LoopRound
+			;If a key was input into the RxQueue
+			;stop the stopwatch
+			;clear the RunStopWatch to stop stop watch
+			BL		Clear_StopWatch
+			;times stops
+			BL		GetChar
+			;now char is in R0
+			;compare that with the LED configuration
+LoopFinished
+			LDR		R0,=OutTime
+			BL		PutStringSB
 ;>>>>>   end main program code <<<<<
 ;Stay here
             B       .
@@ -1075,8 +1125,10 @@ Score_Round				PROC	{R0-R14},{}
 						BX		LR
 						ENDP
 ;-----------------------------------------------------------------------------------------------							
+							
+							
 Start_LED   PROC {R0-R14},{}
-			PUSH {R0-R1}
+			PUSH {R0-R1,LR}
 
 			;Enable port E
 			LDR  R0,=SIM_SCGC5
@@ -1104,9 +1156,10 @@ Start_LED   PROC {R0-R14},{}
 			LDR R0,=FGPIOE_BASE
 			LDR R1,=LED_PORTE_MASK
 			STR R1,[R0,#GPIO_PDDR_OFFSET]
+			BL	R_Off
+			BL	G_Off
       
-      POP {R0-R1}
-			BX		LR
+			POP {R0-R1,PC}
 			ENDP
       
 ;------------------------------------------------------------------------
@@ -1118,7 +1171,7 @@ R_On   PROC {R0-R14},{}
 			LDR R1,=LED_RED_MASK
 			STR R1,[R0,#GPIO_PCOR_OFFSET]
       
-      POP {R0-R1}
+			POP {R0-R1}
 			BX		LR
 			ENDP
 
@@ -1137,7 +1190,7 @@ G_On   PROC {R0-R14},{}
 			ENDP
 
 ;------------------------------------------------------------------------
-R_Off   PROC {R0-R14},{}
+R_Off   	PROC {R0-R14},{}
 			PUSH {R0-R1}
 
 			;Turn off red LED
@@ -1145,7 +1198,7 @@ R_Off   PROC {R0-R14},{}
 			LDR R1,=LED_RED_MASK
 			STR R1,[R0,#GPIO_PSOR_OFFSET]
       
-      POP {R0-R1}
+			POP {R0-R1}
 			BX		LR
 			ENDP
       
@@ -1238,6 +1291,7 @@ Rule2			DCB		"You are going to try to guess the LED light and will get points fo
 Rule3 			DCB		"There are three choices for LED N(no LED), B(Both LED), R(Red LED),and G(Green LED)\0",0
 KeyPress		DCB		"Press any key to get started\0",0
 NewRound		DCB		"New Round Enter the LED\0",0
+OutTime			DCB		"Out of Time-- \0",0
 ;>>>>>   end constants here <<<<<
             ALIGN
 ;****************************************************************
