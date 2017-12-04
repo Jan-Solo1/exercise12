@@ -309,6 +309,16 @@ main
 			LDR		R1,[R0,#0]
 			MOVS	R1,#0
 			STR		R1,[R0,#0]
+			;initalizing the stop by putting the RunStopWatch2 to Zero
+			LDR		R0,=RunStopWatch2
+			LDRB	R1,[R0,#0]
+			MOVS	R1,#0
+			STRB	R1,[R0,#0]
+			;need to initalize the Count2 variable to zero
+			LDR		R0,=Count2
+			LDR		R1,[R0,#0]
+			MOVS	R1,#0
+			STR		R1,[R0,#0]
 			;initalize the PIT_IRQ
 			BL		Init_PIT_IRQ
 			;show the instructions
@@ -354,7 +364,13 @@ NoKey		LDRB	R1,[R0,#NUM_ENQD]
 			LDR		R2,=RandomSeed
 			MOVS	R3,#0
 			STRB	R3,[R2,#0]
-			
+			;create max_Round time and the round on 
+			MOVS	R6,#1
+			;R6 <- amount of round 
+			LDR		R7,=Round_Time
+			;Max_round time == R7
+			BL		Start_Watch2
+			;second stop watch starts used for random seed
 			;elsewise a key was pressed and game can start
 LargeLoop	BL		NextLine
 			LDR		R0,=NewRound
@@ -372,7 +388,7 @@ EmptyQueueLoop1	CPSIE	I
 				BNE		EmptyQueueLoop1
 			;the TxQueue is empty now
 			CPSID		I
-			BL		Random_Number
+			BL		Timer_Random_Seed
 			;want to generate a random number 
 			LDR		R2,=RandomSeed
 			LDR		R2,[R2,#0]
@@ -385,6 +401,7 @@ EmptyQueueLoop1	CPSIE	I
 			CMP		R2,#2
 			BEQ		RedLED
 			;else wise show green
+			;R2 == 3
 			BL		R_Off
 			BL		G_On
 			B		TimeStart
@@ -398,14 +415,10 @@ RedLED		BL		R_On
 			BL		G_Off
 TimeStart	BL		Start_Watch		
 			;then display LED and start timer
-			;create max_Round time and the round on 
-			MOVS	R2,#Num_Rounds
-			;R2 <- amount of round 
-			LDR		R3,=Round_Time
-			;Max_round time == R3
+
 LoopRound	LDR		R4,=Count
 			LDR		R4,[R4,#0]
-			CMP		R4,R3
+			CMP		R4,R7
 			BHS		LoopFinished
 			LDR		R0,=RxRecord
 			;Loop through comparing the time and checking for correct imput
@@ -419,15 +432,89 @@ LoopRound	LDR		R4,=Count
 			;stop the stopwatch
 			;clear the RunStopWatch to stop stop watch
 			BL		Clear_StopWatch
-			;times stops
+			;times stops time value is in count
 			BL		GetChar
 			BL		PutChar
 			;now char is in R0
-			B		LargeLoop
+			;need to check for the correct character
+			LDR		R2,=RandomSeed
+			SUBS	R0,R0,#0x6E
+			CMP		R0,R2
+			BEQ		CorrectNone
+			;else add back 0x6E
+			ADDS	R0,R0,#0x6E
+			SUBS	R0,R0,#0x62
+			CMP		R0,R2
+			BEQ		CorrectBoth
+			;else wise add back 0x62
+			ADDS	R0,R0,#0x62
+			SUBS	R0,R0,#0x72
+			CMP		R0,R2
+			BEQ		CorrectRed
+			;elsewise add back 0x72
+			ADDS	R0,R0,#0x72
+			SUBS	R0,R0,#0x67
+			CMP		R0,R2
+			BEQ		CorrectGreen
+			ADDS	R0,R0,#0x67
+			;elsewise the character was incorrect 
+			BL		NextLine
+			LDR		R0,=WrongInput
+			BL		PutStringSB
+			B		CompleteLoop
 			;compare that with the LED configuration
+CorrectNone	LDR		R0,=NoColor
+			BL		PutStringSB
+			B		ScoreRound
+CorrectBoth	LDR		R0,=BothColor
+			BL		PutStringSB
+			B		ScoreRound
+CorrectRed	LDR		R0,=RedColor
+			BL		PutStringSB
+			B		ScoreRound
+CorrectGreen	LDR	R0,=GreenColor
+			BL		PutStringSB
+			B		ScoreRound
+ScoreRound	
+			;need to make sure correct inputs are initalized
+			MOVS	R0,R7
+			;R0 gets max round time
+			LDR		R1,=Count
+			LDR		R1,[R1,#0]
+			;R1 gets the time 
+			MOVS	R2,R6
+			;R2 gets the round the game is on
+			BL		Score_Round
+			B		CompleteLoop
+			;score gets updated
 LoopFinished
 			LDR		R0,=OutTime
 			BL		PutStringSB
+CompleteLoop	
+			;Need to check the round to see if game over
+			CMP		R6,#Num_Rounds
+			BEQ		GameOver
+			;elsewise decrease time and increase the round
+			ADDS	R6,R6,#1
+			;Rounds Increase by one
+			SUBS	R7,R7,#100
+			;decrease the time 
+			B		LargeLoop
+GameOver	LDR		R0,=GameDone
+			BL		PutStringSB
+			LDR		R0,=Score
+			BL		PutNumUB
+			;need to wait for TxQueue to empty
+			LDR		R2,=TxRecord
+			LDRB	R1,[R2,#NUM_ENQD]
+			MOVS	R0,#0
+			
+EmptyQueueLoop2	CPSIE	I
+				LDRB	R1,[R2,#NUM_ENQD]
+				CMP		R1,#0
+				BNE		EmptyQueueLoop2
+			;the TxQueue is empty now
+			CPSID		I
 ;>>>>>   end main program code <<<<<
 ;Stay here
             B       .
@@ -657,6 +744,25 @@ PIT_ISR			PROC    {R0-R14},{}
 			ADDS	R0,R0,#1
 			STR		R0,[R1,#0]
 NoIncrement	
+			;do nothing to Count
+			;clear interrupts
+			LDR		R1,=PIT_TFLG0
+			LDR		R2,=PIT_TFLG_TIF_MASK
+			STR		R2,[R1,#0]
+			;need to check the second time
+			
+			
+			LDR		R0,=RunStopWatch2
+			LDRB	R1,[R0,#0]
+			;compare to zero, zero means don't increment
+			CMP		R1,#0
+			BEQ		NoIncrement1
+			;if not zero going to increment
+			LDR		R1,=Count2
+			LDR		R0,[R1,#0]
+			ADDS	R0,R0,#1
+			STR		R0,[R1,#0]
+NoIncrement1	
 			;do nothing to Count
 			;clear interrupts
 			LDR		R1,=PIT_TFLG0
@@ -1062,6 +1168,22 @@ Start_Watch				PROC	{R0-R14},{}
 						BX		LR
 						ENDP
 ;-----------------------------------------------------------------------------------------------
+Start_Watch2				PROC	{R0-R14},{}
+;clears the stopwatch count variable and sets the runstopwatch to 1
+						PUSH{R0-R1}
+					;clear the stopwatch count variable and set RunStopWatch to 1
+						LDR		R0,=Count2
+						LDR		R1,[R0,#0]
+						MOVS	R1,#0
+						STR		R1,[R0,#0]
+						LDR		R0,=RunStopWatch2
+						LDRB	R1,[R0,#0]
+						MOVS	R1,#1
+						STRB	R1,[R0,#0]
+						POP{R0-R1}
+						BX		LR
+						ENDP
+;-----------------------------------------------------------------------------------------------
 Input_Pointer			PROC	{R0-R14},{}
 ;produces a new line and then the character ">"
 						PUSH{R0,LR}
@@ -1221,6 +1343,22 @@ G_Off   PROC {R0-R14},{}
       POP {R0-R1}
 			BX		LR
 			ENDP
+;------------------------------------------------------------------------
+Timer_Random_Seed		PROC   {R0-R14},{}
+;sets the random seed to the last two bits of the second pit timer
+						PUSH{R0-R2}
+						LDR		R0,=Count2
+						LDR		R1,[R0,#0]
+						;value of count2 in R0
+						MOVS	R2,#3
+						ANDS	R1,R1,R2
+						;ANDS with 0x03 to get two bits
+						;R0 has a value 0-3
+						LDR		R0,=RandomSeed
+						STR		R1,[R0,#0]
+						PUSH{R0-R2}
+						BX		LR
+						ENDP
 ;>>>>>   end subroutine code <<<<<
             ALIGN
 ;****************************************************************
@@ -1298,7 +1436,13 @@ Rule2			DCB		"You are going to try to guess the LED light and will get points fo
 Rule3 			DCB		"There are three choices for LED N(no LED), B(Both LED), R(Red LED),and G(Green LED)\0",0
 KeyPress		DCB		"Press any key to get started\0",0
 NewRound		DCB		"New Round Enter the LED\0",0
+WrongInput		DCB		"Wrong\0",0
 OutTime			DCB		"Out of Time-- \0",0
+NoColor			DCB		"There was no color\0",0
+BothColor		DCB		"Colors were red and green\0",0
+RedColor		DCB		"Color was red\0",0
+GreenColor		DCB		"Color was green\0",0
+GameDone		DCB		"GameOver Your Score: \0",0
 ;>>>>>   end constants here <<<<<
             ALIGN
 ;****************************************************************
@@ -1313,14 +1457,17 @@ RxRecord	SPACE		Q_REC_SZ
 TxRecord	SPACE		Q_REC_SZ
 	ALIGN
 Count			SPACE		4
+Count2			SPACE		4
 RunStopWatch	SPACE		1
+RunStopWatch2	SPACE		1
 	ALIGN
 StringBuf		SPACE	MAX_STRING
 	   ALIGN
 RandomSeed		SPACE	2
 After         	SPACE   2
 Before        	SPACE   2
-Score			SPACE	2
+	ALIGN
+Score			SPACE	4
 ;>>>>>   end variables here <<<<<
             ALIGN
             END
