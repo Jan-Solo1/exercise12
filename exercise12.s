@@ -1180,6 +1180,10 @@ Score_Round				PROC	{R0-R14},{}
 						BX		LR
 						ENDP
 ;-----------------------------------------------------------------------------------------------							
+;Enables the clock for PORT D and E Modules
+;Port D is initialized for Green
+;Port E is initialized for Red 
+
 Start_LED   PROC {R0-R14},{}
 			PUSH {R0-R1,LR}
 
@@ -1202,14 +1206,17 @@ Start_LED   PROC {R0-R14},{}
 			LDR R1,=SET_PTE29_GPIO
 			STR R1,[R0,#PORTE_PCR29_OFFSET]
 			
+			;Pin 5 for Green LED
 			LDR R0,=PORTD_BASE
 			LDR R1,=SET_PTD5_GPIO
 			STR R1,[R0,#PORTD_PCR5_OFFSET]
 
+			;Pin 29 for Red LED
 			LDR R0,=FGPIOD_BASE
 			LDR R1,=LED_PORTD_MASK
 			STR R1,[R0,#GPIO_PDDR_OFFSET]
 
+			
 			LDR R0,=FGPIOE_BASE
 			LDR R1,=LED_PORTE_MASK
 			STR R1,[R0,#GPIO_PDDR_OFFSET]
@@ -1221,6 +1228,7 @@ Start_LED   PROC {R0-R14},{}
       
       
 ;------------------------------------------------------------------------
+;RED LED ON
 R_On   PROC {R0-R14},{}
 			PUSH {R0-R1}   
 
@@ -1235,6 +1243,7 @@ R_On   PROC {R0-R14},{}
 
         
 ;------------------------------------------------------------------------
+;GREEN LED ON
 G_On   PROC {R0-R14},{}
 			PUSH {R0-R1}
       
@@ -1248,6 +1257,7 @@ G_On   PROC {R0-R14},{}
 			ENDP
 
 ;------------------------------------------------------------------------
+;RED LED OFF
 R_Off   	PROC {R0-R14},{}
 			PUSH {R0-R1}
 
@@ -1261,6 +1271,7 @@ R_Off   	PROC {R0-R14},{}
 			ENDP
       
 ;------------------------------------------------------------------------
+;GREEN LED OFF
 G_Off   PROC {R0-R14},{}
 			PUSH {R0-R1}
 
