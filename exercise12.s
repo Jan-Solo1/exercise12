@@ -734,6 +734,7 @@ NoIncrement
 			LDR		R1,=PIT_TFLG0
 			LDR		R2,=PIT_TFLG_TIF_MASK
 			STR		R2,[R1,#0]
+			POP{R0-R2}
 			CPSIE	I
 			BX		LR
 			ENDP
