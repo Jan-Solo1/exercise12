@@ -327,16 +327,8 @@ main
 			LDR		R0,=KeyPress
 			BL		PutStringSB
 			;need to wait for TxQueue to empty
-			LDR		R2,=TxRecord
-			LDRB	R1,[R2,#NUM_ENQD]
-			MOVS	R0,#0
-			
-EmptyQueueLoop	CPSIE	I
-				LDRB	R1,[R2,#NUM_ENQD]
-				CMP		R1,#0
-				BNE		EmptyQueueLoop
-			;the TxQueue is empty now
-			CPSID		I
+			BL		Empty_TxQueue
+			;Queue emptied
 			;check for Key Pressed
 			LDR		R0,=RxRecord
 			;num enqueueed -> R1
@@ -361,16 +353,8 @@ LargeLoop	BL		NextLine
 			BL		NextLine
 			BL		Input_Pointer
 			;need to wait for TxQueue to empty
-			LDR		R2,=TxRecord
-			LDRB	R1,[R2,#NUM_ENQD]
-			MOVS	R0,#0
-			
-EmptyQueueLoop1	CPSIE	I
-				LDRB	R1,[R2,#NUM_ENQD]
-				CMP		R1,#0
-				BNE		EmptyQueueLoop1
-			;the TxQueue is empty now
-			CPSID		I
+			BL		Empty_TxQueue
+			;Queue emptied
 			BL		Clear_StopWatch
 			BL		Timer_Random_Seed
 			;want to generate a random number 
@@ -490,16 +474,8 @@ GameOver	LDR		R0,=GameDone
 			LDR		R0,=Score
 			BL		PutNumUB
 			;need to wait for TxQueue to empty
-			LDR		R2,=TxRecord
-			LDRB	R1,[R2,#NUM_ENQD]
-			MOVS	R0,#0
-			
-EmptyQueueLoop2	CPSIE	I
-				LDRB	R1,[R2,#NUM_ENQD]
-				CMP		R1,#0
-				BNE		EmptyQueueLoop2
-			;the TxQueue is empty now
-			CPSID		I
+			BL		Empty_TxQueue
+			;Queue emptied
 ;>>>>>   end main program code <<<<<
 ;Stay here
             B       .
@@ -1204,8 +1180,6 @@ Score_Round				PROC	{R0-R14},{}
 						BX		LR
 						ENDP
 ;-----------------------------------------------------------------------------------------------							
-							
-							
 Start_LED   PROC {R0-R14},{}
 			PUSH {R0-R1,LR}
 
@@ -1244,6 +1218,7 @@ Start_LED   PROC {R0-R14},{}
       
 			POP {R0-R1,PC}
 			ENDP
+      
       
 ;------------------------------------------------------------------------
 R_On   PROC {R0-R14},{}
@@ -1297,8 +1272,6 @@ G_Off   PROC {R0-R14},{}
       POP {R0-R1}
 			BX		LR
 			ENDP
-
-			
 ;------------------------------------------------------------------------
 Timer_Random_Seed		PROC   {R0-R14},{}
 ;sets the random seed to the last two bits of the second pit timer
@@ -1313,6 +1286,24 @@ Timer_Random_Seed		PROC   {R0-R14},{}
 						LDR		R0,=RandomSeed
 						STR		R1,[R0,#0]
 						PUSH{R0-R2}
+						BX		LR
+						ENDP
+;-------------------------------------------------------------------------
+Empty_TxQueue			PROC  {R0-R14},{}
+;empties the Txqueue
+;need to wait for TxQueue to empty
+						PUSH{R0-R2}
+						LDR		R2,=TxRecord
+						LDRB	R1,[R2,#NUM_ENQD]
+						MOVS	R0,#0
+			
+EmptyQueueLoop			CPSIE	I
+						LDRB	R1,[R2,#NUM_ENQD]
+						CMP		R1,#0
+						BNE		EmptyQueueLoop
+						;the TxQueue is empty now
+						CPSID		I
+						POP{R0-R2}
 						BX		LR
 						ENDP
 ;>>>>>   end subroutine code <<<<<
