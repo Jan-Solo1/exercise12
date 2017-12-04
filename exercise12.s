@@ -309,34 +309,23 @@ main
 			LDR		R1,[R0,#0]
 			MOVS	R1,#0
 			STR		R1,[R0,#0]
-			;initalizing the stop by putting the RunStopWatch2 to Zero
-			LDR		R0,=RunStopWatch2
-			LDRB	R1,[R0,#0]
-			MOVS	R1,#0
-			STRB	R1,[R0,#0]
-			;need to initalize the Count2 variable to zero
-			LDR		R0,=Count2
-			LDR		R1,[R0,#0]
-			MOVS	R1,#0
-			STR		R1,[R0,#0]
 			;initalize the PIT_IRQ
 			BL		Init_PIT_IRQ
 			;show the instructions
 			LDR		R0,=Instruction
 			BL		PutStringSB
 			BL		NextLine
-			LDR		R0,=Rule1
-			BL		PutStringSB
-			BL		NextLine
-			LDR		R0,=Rule2
-			BL		PutStringSB
-			BL		NextLine
+			;LDR		R0,=Rule1
+			;BL		PutStringSB
+			;BL		NextLine
+			;LDR		R0,=Rule2
+			;BL		PutStringSB
+			;BL		NextLine
 			LDR		R0,=Rule3
 			BL		PutStringSB
 			BL		NextLine
 			LDR		R0,=KeyPress
 			BL		PutStringSB
-			BL		NextLine
 			;need to wait for TxQueue to empty
 			LDR		R2,=TxRecord
 			LDRB	R1,[R2,#NUM_ENQD]
@@ -351,6 +340,7 @@ EmptyQueueLoop	CPSIE	I
 			;check for Key Pressed
 			LDR		R0,=RxRecord
 			;num enqueueed -> R1
+			BL		Start_Watch
 NoKey		LDRB	R1,[R0,#NUM_ENQD]
 			CMP		R1,#0
 			;no key pressed if nothing equeued want to keep checking 
@@ -359,18 +349,11 @@ NoKey		LDRB	R1,[R0,#NUM_ENQD]
 			;dequeue the character from Rxqueue
 			MOVS	R1,R0
 			BL		Dequeue
-			
-			;initalize the randomseed to zero
-			LDR		R2,=RandomSeed
-			MOVS	R3,#0
-			STRB	R3,[R2,#0]
 			;create max_Round time and the round on 
 			MOVS	R6,#1
 			;R6 <- amount of round 
 			LDR		R7,=Round_Time
 			;Max_round time == R7
-			BL		Start_Watch2
-			;second stop watch starts used for random seed
 			;elsewise a key was pressed and game can start
 LargeLoop	BL		NextLine
 			LDR		R0,=NewRound
@@ -388,6 +371,7 @@ EmptyQueueLoop1	CPSIE	I
 				BNE		EmptyQueueLoop1
 			;the TxQueue is empty now
 			CPSID		I
+			BL		Clear_StopWatch
 			BL		Timer_Random_Seed
 			;want to generate a random number 
 			LDR		R2,=RandomSeed
@@ -438,25 +422,26 @@ LoopRound	LDR		R4,=Count
 			;now char is in R0
 			;need to check for the correct character
 			LDR		R2,=RandomSeed
+			LDR		R2,[R2,#0]
 			SUBS	R0,R0,#0x6E
 			CMP		R0,R2
 			BEQ		CorrectNone
 			;else add back 0x6E
 			ADDS	R0,R0,#0x6E
-			SUBS	R0,R0,#0x62
+			SUBS	R0,R0,#0x61
 			CMP		R0,R2
 			BEQ		CorrectBoth
 			;else wise add back 0x62
-			ADDS	R0,R0,#0x62
-			SUBS	R0,R0,#0x72
+			ADDS	R0,R0,#0x61
+			SUBS	R0,R0,#0x70
 			CMP		R0,R2
 			BEQ		CorrectRed
 			;elsewise add back 0x72
-			ADDS	R0,R0,#0x72
-			SUBS	R0,R0,#0x67
+			ADDS	R0,R0,#0x70
+			SUBS	R0,R0,#0x65
 			CMP		R0,R2
 			BEQ		CorrectGreen
-			ADDS	R0,R0,#0x67
+			ADDS	R0,R0,#0x65
 			;elsewise the character was incorrect 
 			BL		NextLine
 			LDR		R0,=WrongInput
@@ -749,26 +734,6 @@ NoIncrement
 			LDR		R1,=PIT_TFLG0
 			LDR		R2,=PIT_TFLG_TIF_MASK
 			STR		R2,[R1,#0]
-			;need to check the second time
-			
-			
-			LDR		R0,=RunStopWatch2
-			LDRB	R1,[R0,#0]
-			;compare to zero, zero means don't increment
-			CMP		R1,#0
-			BEQ		NoIncrement1
-			;if not zero going to increment
-			LDR		R1,=Count2
-			LDR		R0,[R1,#0]
-			ADDS	R0,R0,#1
-			STR		R0,[R1,#0]
-NoIncrement1	
-			;do nothing to Count
-			;clear interrupts
-			LDR		R1,=PIT_TFLG0
-			LDR		R2,=PIT_TFLG_TIF_MASK
-			STR		R2,[R1,#0]
-			POP{R0-R2}
 			CPSIE	I
 			BX		LR
 			ENDP
@@ -1168,22 +1133,6 @@ Start_Watch				PROC	{R0-R14},{}
 						BX		LR
 						ENDP
 ;-----------------------------------------------------------------------------------------------
-Start_Watch2				PROC	{R0-R14},{}
-;clears the stopwatch count variable and sets the runstopwatch to 1
-						PUSH{R0-R1}
-					;clear the stopwatch count variable and set RunStopWatch to 1
-						LDR		R0,=Count2
-						LDR		R1,[R0,#0]
-						MOVS	R1,#0
-						STR		R1,[R0,#0]
-						LDR		R0,=RunStopWatch2
-						LDRB	R1,[R0,#0]
-						MOVS	R1,#1
-						STRB	R1,[R0,#0]
-						POP{R0-R1}
-						BX		LR
-						ENDP
-;-----------------------------------------------------------------------------------------------
 Input_Pointer			PROC	{R0-R14},{}
 ;produces a new line and then the character ">"
 						PUSH{R0,LR}
@@ -1347,7 +1296,7 @@ G_Off   PROC {R0-R14},{}
 Timer_Random_Seed		PROC   {R0-R14},{}
 ;sets the random seed to the last two bits of the second pit timer
 						PUSH{R0-R2}
-						LDR		R0,=Count2
+						LDR		R0,=Count
 						LDR		R1,[R0,#0]
 						;value of count2 in R0
 						MOVS	R2,#3
@@ -1431,8 +1380,8 @@ __Vectors_Size  EQU     __Vectors_End - __Vectors
             AREA    MyConst,DATA,READONLY
 ;>>>>> begin constants here <<<<<
 Instruction		DCB		"Welcome to the Game! The rules of the game follow.\0",0
-Rule1			DCB		"There are 10 rounds to the game decreasing in time each round.\0",0
-Rule2			DCB		"You are going to try to guess the LED light and will get points for guessign correctly.\0",0
+;Rule1			DCB		"There are 10 rounds to the game decreasing in time each round.\0",0
+;Rule2			DCB		"You are going to try to guess the LED light and will get points for guessign correctly.\0",0
 Rule3 			DCB		"There are three choices for LED N(no LED), B(Both LED), R(Red LED),and G(Green LED)\0",0
 KeyPress		DCB		"Press any key to get started\0",0
 NewRound		DCB		"New Round Enter the LED\0",0
@@ -1457,9 +1406,7 @@ RxRecord	SPACE		Q_REC_SZ
 TxRecord	SPACE		Q_REC_SZ
 	ALIGN
 Count			SPACE		4
-Count2			SPACE		4
 RunStopWatch	SPACE		1
-RunStopWatch2	SPACE		1
 	ALIGN
 StringBuf		SPACE	MAX_STRING
 	   ALIGN
