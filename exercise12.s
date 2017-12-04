@@ -1227,6 +1227,10 @@ Start_LED   PROC {R0-R14},{}
 			LDR R0,=PORTE_BASE
 			LDR R1,=SET_PTE29_GPIO
 			STR R1,[R0,#PORTE_PCR29_OFFSET]
+			
+			LDR R0,=PORTD_BASE
+			LDR R1,=SET_PTD5_GPIO
+			STR R1,[R0,#PORTD_PCR5_OFFSET]
 
 			LDR R0,=FGPIOD_BASE
 			LDR R1,=LED_PORTD_MASK
@@ -1293,6 +1297,8 @@ G_Off   PROC {R0-R14},{}
       POP {R0-R1}
 			BX		LR
 			ENDP
+
+			
 ;------------------------------------------------------------------------
 Timer_Random_Seed		PROC   {R0-R14},{}
 ;sets the random seed to the last two bits of the second pit timer
